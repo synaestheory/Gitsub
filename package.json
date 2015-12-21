@@ -14,8 +14,8 @@
     "url": "https://github.com/Rosseyn/Gitsub.git"
   },
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
+  "license": "MIT",
+  "dependencies": {
     "bluebird": "~3.0.6",
     "chalk": "~1.1.1",
     "child-process-promise": "~1.1.0",
