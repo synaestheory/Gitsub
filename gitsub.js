@@ -32,19 +32,19 @@ var Promise     = require('bluebird'),
 //     .parse(process.argv);
 
 console.time(chalk.green('git submodule sync'));
-var cmd = 'git pull && git submodule update --init --recursive';
-exec(cmd)
-.catch(function(error) {
-    console.log('Error:\n', error);
-})
-.then(function(result) {
-    if(typeof result.stderr != 'undefined') {
-        console.log(result.stderr);
-        syncModules();
-        return {status: 'success', message: result.stderr};
-    }
+// var cmd = 'git pull && git submodule update --init --recursive';
+// exec(cmd)
+// .catch(function(error) {
+//     console.log(error.stderr);
+// })
+// .then(function(result) {
+//     if(typeof result.stderr != 'undefined') {
+//         console.log(result.stderr);
+//         syncModules();
+//         return {status: 'success', message: result.stderr};
+//     }
     syncModules();
-});
+// });
 
 function syncModules() {
     var gitModulesFile = path.resolve('.gitmodules');
@@ -99,6 +99,12 @@ function syncModules() {
                 console.log();
                 console.timeEnd(chalk.green('git submodule sync'));
             });
+        })
+        .catch({code: 'ENOENT'}, function(error) {
+            console.log(chalk.red('.gitmodules file not found'));
+        })
+        .catch(function(error) {
+            console.log(error);
         });
     }
 }
