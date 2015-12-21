@@ -4,7 +4,7 @@
   "description": "Async Submodule Update for Git",
   "main": "./gitsub.js",
   "bin": {
-    "sub": "./gitsub.js"
+    "gitsub": "./gitsub.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
