@@ -6,7 +6,33 @@ var Promise     = require('bluebird'),
     path        = require('path'),
     exec        = require('child-process-promise').exec,
     _           = require('underscore'),
-    chalk       = require('chalk');
+    chalk       = require('chalk'),
+    program     = require('commander');
+
+program
+    .option('-q, --quiet', 'Reduce output to screen')
+    .option('-s, --subonly', 'Sync submodules only, skip parent module update')
+    .action(function() {
+        console.time(chalk.green('git submodule sync'));
+        if(program.subonly) {
+            syncModules();
+        } else {
+            var cmd = 'git pull && git submodule update --init --recursive';
+            exec(cmd)
+            .catch(function(error) {
+                console.log(error.stderr);
+            })
+            .then(function(result) {
+                if(typeof result.stderr != 'undefined') {
+                    console.log(result.stderr);
+                    syncModules();
+                    return {status: 'success', message: result.stderr};
+                }
+            });
+        }
+    })
+    .parse(process.argv);
+
 
 console.time(chalk.green('git submodule sync'));
 var cmd = 'git pull && git submodule update --init --recursive';
