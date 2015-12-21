@@ -8,29 +8,6 @@ var Promise     = require('bluebird'),
     _           = require('underscore'),
     chalk       = require('chalk');
 
-
-// var program     = require('commander');
-// program
-//     .option('-q, --quiet', 'Reduce output to screen')
-//     .option('-s, --subonly', 'Sync submodules only, skip parent module update')
-//     .action(function() {
-//         console.time(chalk.green('git submodule sync'));
-//         if(program.subonly) {
-//             syncModules();
-//         } else {
-//             var cmd = 'git pull && git submodule update --init --recursive';
-//             execAsync(cmd)
-//             .catch(function(error) {
-//                 console.log('Error:\n', error);
-//             })
-//             .then(function(result) {
-//                 console.log(result[0]);
-//                 syncModules();
-//             });
-//         }
-//     })
-//     .parse(process.argv);
-
 console.time(chalk.green('git submodule sync'));
 var cmd = 'git pull && git submodule update --init --recursive';
 exec(cmd)
