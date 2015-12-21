@@ -32,19 +32,19 @@ var Promise     = require('bluebird'),
 //     .parse(process.argv);
 
 console.time(chalk.green('git submodule sync'));
-// var cmd = 'git pull && git submodule update --init --recursive';
-// exec(cmd)
-// .catch(function(error) {
-//     console.log(error.stderr);
-// })
-// .then(function(result) {
-//     if(typeof result.stderr != 'undefined') {
-//         console.log(result.stderr);
-//         syncModules();
-//         return {status: 'success', message: result.stderr};
-//     }
+var cmd = 'git pull && git submodule update --init --recursive';
+exec(cmd)
+.catch(function(error) {
+    console.log(error.stderr);
+})
+.then(function(result) {
+    if(typeof result.stderr != 'undefined') {
+        console.log(result.stderr);
+        syncModules();
+        return {status: 'success', message: result.stderr};
+    }
     syncModules();
-// });
+});
 
 function syncModules() {
     var gitModulesFile = path.resolve('.gitmodules');
