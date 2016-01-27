@@ -1,6 +1,6 @@
 {
   "name": "gitsub",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Async Submodule Update for Git",
   "main": "./gitsub.js",
   "bin": {
