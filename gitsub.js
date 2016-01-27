@@ -8,6 +8,10 @@ var Promise     = require('bluebird'),
     _           = require('underscore'),
     chalk       = require('chalk');
 
+var flags = process.argv.filter(function(v) {return v.indexOf('--') === 0;});
+const BRANCH_FLAG = flags.length > 0 ? flags[0].replace('--', '') : 'master';
+
+
 console.time(chalk.green('git submodule sync'));
 var cmd = 'git pull && git submodule update --init --recursive';
 exec(cmd)
@@ -34,7 +38,7 @@ function syncModules() {
         })
         .then(function(data) {
             data.forEach(function(v,k) {
-                var cmd = 'git -C ./'+ v +' checkout develop && ' +
+                var cmd = 'git -C ./'+ v +' checkout '+ BRANCH_FLAG +' && '+
                           'git -C ./'+ v +' pull';
                 var gitPromise = exec(cmd)
                 .catch(function(error) {
