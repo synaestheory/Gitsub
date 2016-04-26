@@ -4,6 +4,7 @@
 var Promise     = require('bluebird'),
     fs          = Promise.promisifyAll(require('graceful-fs')),
     path        = require('path'),
+    spawn       = require('child-process-promise').spawn,
     exec        = require('child-process-promise').exec,
     _           = require('lodash/fp'),
     chalk       = require('chalk');
@@ -14,51 +15,24 @@ function errLog() {
 }
 var logStderr = _.flow(_.property('stderr'), errLog);
 var flags = process.argv.filter(function(v) {return v.indexOf('--') === 0;});
-const BRANCH_FLAG = flags.length > 0 ? flags[0].replace('--', '') : null;
+const BRANCH_FLAG = flags.length > 0 ? flags[0].replace('--', '') : 'master';
 
-console.log('Performing \'git pull\' and \'git submodule update\'');
 console.time(chalk.green('git submodule sync'));
-exec('git pull && git submodule update --init --recursive')
-.catch(logStderr)
-.then(submoduleUpdateSuccessHandler);
-
-function submoduleUpdateSuccessHandler(result) {
-    if(typeof result.stderr != 'undefined') {
-        console.log(result.stderr);
-        syncModules();
-        return {status: 'success', message: result.stderr};
-    }
-    syncModules();
-}
+console.log(`updating main repository and initializing submodules:`);
+spawn('git', ['pull'], {stdio: 'inherit'})
+.then(__ => spawn('git', ['submodule', 'update', '--init', '--recursive'], {stdio: 'inherit'}))
+.then(syncModules);
 
 function submodulePullErrorHandler(error) {
    return [0].concat(_.tail(error.stderr.split('\n')));
-    // /Already on/
-    // /Previous HEAD position/
-    // /Your branch is up-to-date/
 }
 
 function submodulePullSuccessHandler(submodule, result) {
-    if(typeof result.stderr != 'undefined') {
-        return {status: 'success', submodule: submodule, message: result.stderr};
-    } else {
+    if(typeof result.stderr === 'undefined') {
         return {status: 'error', submodule: submodule, message: result.slice(1).join('\n')};
+    } else {
+        return {status: 'success', submodule: submodule, message: result.stderr};
     }
-}
-
-function handleResults(results) {
-    var errors = _.sortBy('submodule')(results)
-    .filter(_.flow(_.property('status'), _.eq('error')))
-    .map(function(error) {
-        return error.submodule + ':\n' + error.message;
-    });
-
-    if(!!errors.length) {
-        console.log(chalk.red.underline('\n\t=== ERRORS ==='));
-        errors.map(function(error) {errLog(error);});
-    }
-    console.log();
-    console.timeEnd(chalk.green('git submodule sync'));
 }
 
 function parseSubmodules(data) {
@@ -71,26 +45,42 @@ function checkoutAndPull(submodule) {
     var checkout = gitCommand +' checkout '+ BRANCH_FLAG;
     var pull = gitCommand +' pull';
 
-    log('Pulling: ' + submodule + (BRANCH_FLAG ? ':' + BRANCH_FLAG : ''));
+    log('Pulling: ' + submodule + ':' + chalk.blue(BRANCH_FLAG));
 
-    return exec(BRANCH_FLAG ? checkout + ' && ' + pull : pull)
+    return exec(checkout)
+    .then(__ => exec(pull))
     .catch(submodulePullErrorHandler)
     .then(submodulePullSuccessHandler.bind(null, submodule));
 }
 
 var pullSubmodules = _.flow(parseSubmodules, _.map(checkoutAndPull));
 
-function syncModules() {
-    var gitModulesFile = path.resolve('.gitmodules');
+function handleResults(results) {
+  var errors = _.sortBy('submodule')(results)
+  .filter(_.flow(_.property('status'), _.eq('error')))
+  .map(function(error) {
+    return error.submodule + ':\n' + error.message;
+  });
 
-    if(gitModulesFile) {
-        console.log('Indexing submodules...');
-        fs.readFileAsync(gitModulesFile, 'utf8')
-        .then(pullSubmodules)
-        .then(handleResults)
-        .catch({code: 'ENOENT'}, function() {
-            errLog('.gitmodules file not found');
-        })
-        .catch(log);
-    }
+  if(errors.length) {
+    console.log(chalk.red.underline('\n\t=== ERRORS ==='));
+    errors.map(function(error) {errLog(error);});
+  }
+  console.log();
+  console.timeEnd(chalk.green('git submodule sync'));
+}
+
+function syncModules() {
+  var gitModulesFile = path.resolve('.gitmodules');
+
+  if(gitModulesFile) {
+    console.log('Indexing submodules...');
+    fs.readFileAsync(gitModulesFile, 'utf8')
+    .then(pullSubmodules)
+    .then(results => Promise.all(results).then(handleResults))
+    .catch({code: 'ENOENT'}, function() {
+      errLog('.gitmodules file not found');
+    })
+    .catch(log);
+  }
 }
